@@ -194,6 +194,6 @@ dis$Var1 <- factor(dis$Var1, levels=unique(dis$Var1))
 ggplot(dis, aes(1, pct*100)) + geom_col(aes(fill= fct_rev(Var1)), colour = "black") +
   xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Born Again Protestants Views on Discrimination") +
   theme(plot.title = element_text(hjust = 0.5)) +
-  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(text=element_text(size=12, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
   theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
   guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(group ~ .)  
