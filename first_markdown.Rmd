@@ -1,0 +1,370 @@
+---
+title: "CT ANES Analysis"
+author: "Ryan Burge"
+date: "April 21, 2017"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(readr)
+library(broom)
+library(Hmisc)
+library(forcats)
+library(haven)
+library(dplyr)
+library(ggplot2)
+library(extrafont)
+library(car)
+anes <- read_dta("D:/anes_2016/anes_timeseries_2016.dta")
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+anes$bagain <- Recode(anes$V161263, "1=1; else=0")
+
+anes$prot <- Recode(anes$V161247a, "1=1; else=0")
+
+anes$white <- Recode(anes$V161310a, "1=1; else =0")
+anes$black <- Recode(anes$V161310b, "1=1; else =0")
+anes$asian <- Recode(anes$V161310d, "1=1; else =0")
+
+anes$whtbaprot <- anes$white + anes$bagain + anes$prot
+anes$whtbaprot <- Recode(anes$whtbaprot, "3=1; else=0")
+
+anes$attend <-  anes$V161245
+anes$attend <- Recode(anes$attend, "-9=0; -1=0; 1=6; 2=4; 3=3; 4=2; 5=1")
+
+anes$hiattend <- Recode(anes$V161245a, "1=-1; else=0")
+anes$attend <- anes$hiattend + anes$attend
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+anes$vote16 <- anes$V162062x
+
+votetotal <- anes %>% filter(white ==1 & prot ==1 & bagain ==1) %>% 
+  count(vote16, wt = V160102) %>% mutate(weight = prop.table(n)) %>% arrange(desc(weight))
+
+votetotal$vote16 <-as.numeric(votetotal$vote16)
+
+votetotal$vote16 <- Recode(votetotal$vote16,"1='Hillary Clinton';
+                       2='Donald Trump';
+                       3='Gary Johnson';
+                       4='Jill Stein'; 
+                       5='Other Candidate';
+                      -1= 'No Vote';
+                      -9='Refused'")
+
+ggplot(votetotal, aes(x=reorder(vote16, -weight), y= weight*100)) + geom_col()
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+anes$trumptherm <- anes$V162079
+anes$trumptherm[anes$trumptherm == -9] <- NA
+anes$trumptherm[anes$trumptherm == -7] <- NA
+anes$trumptherm[anes$trumptherm == -6] <- NA
+anes$trumptherm[anes$trumptherm == 998] <- NA
+
+anes$clintontherm <- anes$V162078
+anes$clintontherm[anes$clintontherm == -9] <- NA
+anes$clintontherm[anes$clintontherm == -7] <- NA
+anes$clintontherm[anes$clintontherm == -6] <- NA
+anes$clintontherm[anes$clintontherm == 998] <- NA
+
+anes$hrccut <- as.numeric(cut2(anes$clintontherm, g=5))
+anes$djtcut <- as.numeric(cut2(anes$trumptherm, g=5))
+
+whtbaprot <- filter(anes, whtbaprot ==1)
+
+
+t1 <- table(whtbaprot$hrccut)
+t1 <- tidy(t1)
+
+t1$Var1 <- Recode(t1$Var1, "1='0-20';
+                            2='21-40';
+                            3='41-60';
+                            4='61-80';
+                            5='81-100'")
+
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+ggplot(t1, aes(x=Var1, y=pct*100)) + geom_col(fill = "dodgerblue3", color = "black") + 
+  xlab("Clinton Thermometer Scores") + ylab("Percent of Respondents") + ggtitle("Among White Born Again Protestants") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans"))
+
+
+t2 <- table(whtbaprot$djtcut)
+t2 <- tidy(t2)
+
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t2$Var1 <- Recode(t2$Var1, "1='0-20';
+                            2='21-40';
+                            3='41-60';
+                            4='61-80';
+                            5='81-100'")
+
+ggplot(t2, aes(x=Var1, y=pct*100)) + geom_col(fill = "firebrick2", color = "black") + 
+  xlab("Trump Thermometer Scores") + ylab("Percent of Respondents") + ggtitle("Among White Born Again Protestants") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans"))
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12}
+anes$hrcabort <- anes$V162181
+anes$djtabort <- anes$V162182
+
+anes$hrcabort[anes$hrcabort == -9] <- NA
+anes$hrcabort[anes$hrcabort == -7] <- NA
+anes$hrcabort[anes$hrcabort == -6] <- NA
+anes$hrcabort[anes$hrcabort == -8] <- NA
+
+anes$djtabort[anes$djtabort == -9] <- NA
+anes$djtabort[anes$djtabort == -7] <- NA
+anes$djtabort[anes$djtabort == -6] <- NA
+anes$djtabort[anes$djtabort == -8] <- NA
+
+whtbaprot <- filter(anes, whtbaprot ==1)
+
+t1 <- table(anes$hrcabort)
+t2 <- table(whtbaprot$hrcabort)
+
+t1 <- tidy(t1)
+t2 <- tidy(t2)
+
+t1$Var1 <- Recode(t1$Var1, "1='Complete Ban';
+                            2='Rape, Incest, Life of the Mother';
+                            3='Clearly Established Need';
+                            4='Always Permitted'")
+
+t2$Var1 <- Recode(t2$Var1, "1='Complete Ban';
+                            2='Rape, Incest, Life of the Mother';
+                            3='Clearly Established Need';
+                            4='Always Permitted'")
+
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t1$label  <- c("Entire Sample")
+t2$label  <- c("BA + Prot")
+
+hrcabort <- rbind(t1, t2)
+
+hrcabort$Var1 <- factor(hrcabort$Var1, levels=unique(hrcabort$Var1))
+
+
+ggplot(hrcabort, aes(1, pct*100)) + geom_col(aes(fill= Var1), colour = "black") +
+  xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Perception of Clinton on Abortion") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
+  guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
+
+
+t1 <- table(anes$djtabort)
+t2 <- table(whtbaprot$djtabort)
+
+t1 <- tidy(t1)
+t2 <- tidy(t2)
+
+t1$Var1 <- Recode(t1$Var1, "1='Complete Ban';
+                            2='Rape, Incest, Life of the Mother';
+                            3='Clearly Established Need';
+                            4='Always Permitted'")
+
+t2$Var1 <- Recode(t2$Var1, "1='Complete Ban';
+                            2='Rape, Incest, Life of the Mother';
+                            3='Clearly Established Need';
+                            4='Always Permitted'")
+
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t1$label  <- c("Entire Sample")
+t2$label  <- c("BA + Prot")
+
+djtabort <- rbind(t1, t2)
+
+djtabort$Var1 <- factor(djtabort$Var1, levels=unique(djtabort$Var1))
+
+
+ggplot(djtabort, aes(1, pct*100)) + geom_col(aes(fill= Var1), colour = "black") +
+  xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Perception of Trump on Abortion") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
+  guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=10}
+anes$blackdis <- anes$V162357
+
+anes$blackdis[anes$blackdis == -9] <- NA
+anes$blackdis[anes$blackdis == -7] <- NA
+anes$blackdis[anes$blackdis == -6] <- NA
+anes$blackdis[anes$blackdis == -5] <- NA
+
+anes$blackdis <- 6- anes$blackdis
+
+anes$hispdis <- anes$V162358
+
+anes$hispdis[anes$hispdis == -9] <- NA
+anes$hispdis[anes$hispdis == -7] <- NA
+anes$hispdis[anes$hispdis == -6] <- NA
+anes$hispdis[anes$hispdis == -5] <- NA
+
+anes$hispdis <- 6- anes$hispdis
+
+
+anes$asiandis <- anes$V162359
+
+anes$asiandis[anes$asiandis == -9] <- NA
+anes$asiandis[anes$asiandis == -7] <- NA
+anes$asiandis[anes$asiandis == -6] <- NA
+anes$asiandis[anes$asiandis == -5] <- NA
+
+anes$asiandis <- 6- anes$asiandis
+
+
+anes$whitedis <- anes$V162360
+
+anes$whitedis[anes$whitedis == -9] <- NA
+anes$whitedis[anes$whitedis == -7] <- NA
+anes$whitedis[anes$whitedis == -6] <- NA
+anes$whitedis[anes$whitedis == -5] <- NA
+
+anes$whitedis <- 6- anes$whitedis
+
+
+anes$lgbtdis <- anes$V162361
+
+anes$lgbtdis[anes$lgbtdis == -9] <- NA
+anes$lgbtdis[anes$lgbtdis == -7] <- NA
+anes$lgbtdis[anes$lgbtdis == -6] <- NA
+anes$lgbtdis[anes$lgbtdis == -5] <- NA
+
+anes$lgbtdis <- 6- anes$lgbtdis
+
+
+anes$womendis <- anes$V162362
+
+anes$womendis[anes$womendis == -9] <- NA
+anes$womendis[anes$womendis == -7] <- NA
+anes$womendis[anes$womendis == -6] <- NA
+anes$womendis[anes$womendis == -5] <- NA
+
+anes$womendis <- 6- anes$womendis
+
+
+anes$mendis <- anes$V162363
+
+anes$mendis[anes$mendis == -9] <- NA
+anes$mendis[anes$mendis == -7] <- NA
+anes$mendis[anes$mendis == -6] <- NA
+anes$mendis[anes$mendis == -5] <- NA
+
+anes$mendis <- 6- anes$mendis
+
+
+anes$muslimdis <- anes$V162364
+
+anes$muslimdis[anes$muslimdis == -9] <- NA
+anes$muslimdis[anes$muslimdis == -7] <- NA
+anes$muslimdis[anes$muslimdis == -6] <- NA
+anes$muslimdis[anes$muslimdis == -5] <- NA
+
+anes$muslimdis <- 6- anes$muslimdis
+
+
+anes$xtndis <- anes$V162365
+
+anes$xtndis[anes$xtndis == -9] <- NA
+anes$xtndis[anes$xtndis == -7] <- NA
+anes$xtndis[anes$xtndis == -6] <- NA
+anes$xtndis[anes$xtndis == -5] <- NA
+
+anes$xtndis <- 6- anes$xtndis
+
+
+anes$transdis <- anes$V162366
+
+anes$transdis[anes$transdis == -9] <- NA
+anes$transdis[anes$transdis == -7] <- NA
+anes$transdis[anes$transdis == -6] <- NA
+anes$transdis[anes$transdis == -5] <- NA
+
+anes$transdis <- 6- anes$transdis
+
+
+whtbaprot <- filter(anes, whtbaprot ==1)
+
+t1 <- table(whtbaprot$blackdis)
+t1 <- tidy(t1)
+t1$group <- c("Blacks")
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+
+t2 <- table(whtbaprot$hispdis)
+t2 <- tidy(t2)
+t2$group <- c("Hispanics")
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t3 <- table(whtbaprot$asiandis)
+t3 <- tidy(t3)
+t3$group <- c("Asians")
+t3 <- t3 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t4 <- table(whtbaprot$whitedis)
+t4 <- tidy(t4)
+t4$group <- c("Whites")
+t4 <- t4 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t5 <- table(whtbaprot$lgbtdis)
+t5 <- tidy(t5)
+t5$group <- c("Gay")
+t5 <- t5 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t6 <- table(whtbaprot$womendis)
+t6 <- tidy(t6)
+t6$group <- c("Women")
+t6 <- t6 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+
+t7 <- table(whtbaprot$mendis)
+t7 <- tidy(t7)
+t7$group <- c("Men")
+t7 <- t7 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t8 <- table(whtbaprot$muslimdis)
+t8 <- tidy(t8)
+t8$group <- c("Muslims")
+t8 <- t8 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t9 <- table(whtbaprot$xtndis)
+t9 <- tidy(t9)
+t9$group <- c("Xtns")
+t9 <- t9 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t10 <- table(whtbaprot$transdis)
+t10 <- tidy(t10)
+t10$group <- c("Trans.")
+t10 <- t10 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+dis <- rbind(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10)
+
+dis$Var1 <- Recode(dis$Var1, "1='None at all';
+                  2='A little';
+                  3='A moderate amount';
+                  4='A lot';
+                  5='A great deal'")
+
+dis$Var1 <- factor(dis$Var1, levels=unique(dis$Var1))
+
+
+ggplot(dis, aes(1, pct*100)) + geom_col(aes(fill= fct_rev(Var1)), colour = "black") +
+  xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Born Again Protestants Views on Discrimination") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
+  guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(group ~ .)  
+```
+
