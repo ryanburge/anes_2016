@@ -197,4 +197,151 @@ ggplot(djtabort, aes(1, pct*100)) + geom_col(aes(fill= Var1), colour = "black") 
   theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
   guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
 
+anes$xtndis <- anes$V162365
 
+anes$xtndis[anes$xtndis == -9] <- NA
+anes$xtndis[anes$xtndis == -7] <- NA
+anes$xtndis[anes$xtndis == -6] <- NA
+anes$xtndis[anes$xtndis == -5] <- NA
+
+anes$xtndis <- 6- anes$xtndis
+
+t1 <- table(anes$xtndis)
+t2 <- table(whtbaprot$xtndis)
+
+t1 <- tidy(t1)
+t2 <- tidy(t2)
+
+t1$Var1 <- Recode(t1$Var1, "1='None at all';
+                            2='A little';
+                            3='A moderate amount';
+                            4='A lot';
+                            5='A great deal'")
+
+t2$Var1 <- Recode(t2$Var1, "1='None at all';
+                            2='A little';
+                            3='A moderate amount';
+                            4='A lot';
+                            5='A great deal'")
+
+
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t1$label  <- c("Entire Sample")
+t2$label  <- c("BA + Prot")
+
+xtndis <- rbind(t1, t2)
+
+xtndis$Var1 <- factor(xtndis$Var1, levels=unique(xtndis$Var1))
+
+
+ggplot(xtndis, aes(1, pct*100)) + geom_col(aes(fill= fct_rev(Var1)), colour = "black") +
+  xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Discrimination Against Christians") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
+  guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
+
+
+## MUSLIM DISCRIMINATION
+
+anes$musdis <- anes$V162364
+
+anes$musdis[anes$musdis == -9] <- NA
+anes$musdis[anes$musdis == -7] <- NA
+anes$musdis[anes$musdis == -6] <- NA
+anes$musdis[anes$musdis == -5] <- NA
+
+anes$musdis <- 6- anes$musdis
+
+whtbaprot <- filter(anes, whtbaprot ==1)
+
+
+t1 <- table(anes$musdis)
+t2 <- table(whtbaprot$musdis)
+
+t1 <- tidy(t1)
+t2 <- tidy(t2)
+
+t1$Var1 <- Recode(t1$Var1, "1='None at all';
+                  2='A little';
+                  3='A moderate amount';
+                  4='A lot';
+                  5='A great deal'")
+
+t2$Var1 <- Recode(t2$Var1, "1='None at all';
+                  2='A little';
+                  3='A moderate amount';
+                  4='A lot';
+                  5='A great deal'")
+
+
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t1$label  <- c("Entire Sample")
+t2$label  <- c("BA + Prot")
+
+musdis <- rbind(t1, t2)
+
+musdis$Var1 <- factor(musdis$Var1, levels=unique(musdis$Var1))
+
+
+ggplot(musdis, aes(1, pct*100)) + geom_col(aes(fill= fct_rev(Var1)), colour = "black") +
+  xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Discrimination Against Muslims") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
+  guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
+
+## LGBT DISCRIMINATION
+
+anes$lgbtdis <- anes$V162361
+
+anes$lgbtdis[anes$lgbtdis == -9] <- NA
+anes$lgbtdis[anes$lgbtdis == -7] <- NA
+anes$lgbtdis[anes$lgbtdis == -6] <- NA
+anes$lgbtdis[anes$lgbtdis == -5] <- NA
+
+anes$lgbtdis <- 6- anes$lgbtdis
+
+whtbaprot <- filter(anes, whtbaprot ==1)
+
+
+t1 <- table(anes$lgbtdis)
+t2 <- table(whtbaprot$lgbtdis)
+
+t1 <- tidy(t1)
+t2 <- tidy(t2)
+
+t1$Var1 <- Recode(t1$Var1, "1='None at all';
+                  2='A little';
+                  3='A moderate amount';
+                  4='A lot';
+                  5='A great deal'")
+
+t2$Var1 <- Recode(t2$Var1, "1='None at all';
+                  2='A little';
+                  3='A moderate amount';
+                  4='A lot';
+                  5='A great deal'")
+
+
+t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
+t2 <- t2 %>% mutate(pct = round(Freq/sum(Freq),2))
+
+t1$label  <- c("Entire Sample")
+t2$label  <- c("BA + Prot")
+
+lgbtdis <- rbind(t1, t2)
+
+lgbtdis$Var1 <- factor(lgbtdis$Var1, levels=unique(lgbtdis$Var1))
+
+
+ggplot(lgbtdis, aes(1, pct*100)) + geom_col(aes(fill= fct_rev(Var1)), colour = "black") +
+  xlab("Abortion Scenarios") + ylab("Percent of Respondents") + ggtitle("Discrimination Against LGBT") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(text=element_text(size=18, family="KerkisSans")) + coord_flip() + theme(axis.title.y = element_blank()) + 
+  theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
+  guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
