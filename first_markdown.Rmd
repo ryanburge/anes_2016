@@ -2,7 +2,9 @@
 title: "CT ANES Analysis"
 author: "Ryan Burge"
 date: "April 21, 2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
@@ -15,10 +17,15 @@ library(dplyr)
 library(ggplot2)
 library(extrafont)
 library(car)
+library(scales)
+library(gridExtra)
 anes <- read_dta("D:/anes_2016/anes_timeseries_2016.dta")
 ```
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
+anes <- read_dta("D:/anes_2016/anes_timeseries_2016.dta")
+
+
 anes$bagain <- Recode(anes$V161263, "1=1; else=0")
 
 anes$prot <- Recode(anes$V161247a, "1=1; else=0")
@@ -30,12 +37,41 @@ anes$asian <- Recode(anes$V161310d, "1=1; else =0")
 anes$whtbaprot <- anes$white + anes$bagain + anes$prot
 anes$whtbaprot <- Recode(anes$whtbaprot, "3=1; else=0")
 
+anes$whtnonba <- anes$white + anes$prot
+anes$whtnonba <- Recode(anes$whtnonba, "2=1; else=0")
+anes$batest <- Recode(anes$bagain, "1=10; else=0")
+anes$whtnonba <- anes$whtnonba + anes$batest
+anes$whtnonba <- Recode(anes$whtnonba, "1=1; else=0")
+
 anes$attend <-  anes$V161245
 anes$attend <- Recode(anes$attend, "-9=0; -1=0; 1=6; 2=4; 3=3; 4=2; 5=1")
 
 anes$hiattend <- Recode(anes$V161245a, "1=-1; else=0")
 anes$attend <- anes$hiattend + anes$attend
+
+anes$catholic <- Recode(anes$V161247a, "2=1; else=0")
+anes$jewish <- Recode(anes$V161247a, "3=1; else=0")
+
+anes$blackprot <- anes$black + anes$prot
+anes$blackprot <- Recode(anes$blackprot, "2=1; else=0")
+
+anes$r1 <- Recode(anes$whtbaprot, "1=1; else=0")
+anes$r2 <- Recode(anes$whtnonba, "1=2; else=0")
+anes$r3 <- Recode(anes$blackprot, "1=3; else=0")
+anes$r4 <- Recode(anes$catholic, "1=4; else=0")
+anes$r5 <- Recode(anes$jewish, "1=5; else=0")
+
+anes$reltrad <- anes$r1 + anes$r2 + anes$r3 + anes$r4 + anes$r5
+
+anes$reltrad <- Recode(anes$reltrad, "1='White Born Again Protestants';
+                       2='White Non Born Again Protestants';
+                       3='Black Protestants';
+                       4='Catholic'; 
+                       5='Jewish';
+                       0= 'Other'")
 ```
+
+## Simple Vote Totals 
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
 anes$vote16 <- anes$V162062x
@@ -55,6 +91,8 @@ votetotal$vote16 <- Recode(votetotal$vote16,"1='Hillary Clinton';
 
 ggplot(votetotal, aes(x=reorder(vote16, -weight), y= weight*100)) + geom_col()
 ```
+
+## Thermometer Scores for Each Candidate
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
 anes$trumptherm <- anes$V162079
@@ -89,7 +127,7 @@ t1 <- t1 %>% mutate(pct = round(Freq/sum(Freq),2))
 ggplot(t1, aes(x=Var1, y=pct*100)) + geom_col(fill = "dodgerblue3", color = "black") + 
   xlab("Clinton Thermometer Scores") + ylab("Percent of Respondents") + ggtitle("Among White Born Again Protestants") +
   theme(plot.title = element_text(hjust = 0.5)) +
-  theme(text=element_text(size=18, family="KerkisSans"))
+  theme(text=element_text(size=18, family="KerkisSans")) 
 
 
 t2 <- table(whtbaprot$djtcut)
@@ -108,6 +146,8 @@ ggplot(t2, aes(x=Var1, y=pct*100)) + geom_col(fill = "firebrick2", color = "blac
   theme(plot.title = element_text(hjust = 0.5)) +
   theme(text=element_text(size=18, family="KerkisSans"))
 ```
+
+## How do voters perceive the candidates on abortion? 
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12}
 anes$hrcabort <- anes$V162181
@@ -194,6 +234,8 @@ ggplot(djtabort, aes(1, pct*100)) + geom_col(aes(fill= Var1), colour = "black") 
   theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
   guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(label ~ .)  
 ```
+
+## How do Evangelicals perceive discrimination? 
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=10}
 anes$blackdis <- anes$V162357
@@ -368,3 +410,228 @@ ggplot(dis, aes(1, pct*100)) + geom_col(aes(fill= fct_rev(Var1)), colour = "blac
   guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(group ~ .)  
 ```
 
+## How do the two candidates treat women? 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=5}
+anes$trumpwomen <- anes$V162188x
+anes$clintonwomen <- anes$V162189x
+
+anes$clintonwomen[anes$clintonwomen == -9] <- NA
+anes$clintonwomen[anes$clintonwomen == -8] <- NA
+anes$clintonwomen[anes$clintonwomen == -7] <- NA
+anes$clintonwomen[anes$clintonwomen == -6] <- NA
+
+anes$trumpwomen[anes$trumpwomen == -9] <- NA
+anes$trumpwomen[anes$trumpwomen == -8] <- NA
+anes$trumpwomen[anes$trumpwomen == -7] <- NA
+anes$trumpwomen[anes$trumpwomen == -6] <- NA
+
+clinton <- anes %>% group_by(reltrad) %>% summarise(mean = mean(clintonwomen, na.rm= TRUE))
+clinton$label <- c("Clinton")
+
+trump <- anes %>% group_by(reltrad) %>% summarise(mean = mean(trumpwomen, na.rm= TRUE))
+trump$label <- c("Trump")
+
+women <- rbind(clinton, trump)
+
+ggplot(women, aes(x=mean, y =label)) + geom_point(color = "black", shape=21, size =4, aes(fill = factor(reltrad))) + 
+  theme(legend.title=element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(limits = c(1,7), breaks = c(1,2,3,4,5,6,7), labels = c("Extremely Poorly", "Moderately Poorly", "Slightly Poorly", "Neither", "Slightly Well", "Moderately Well", "Extremely Well")) +  
+  scale_fill_manual(values = c("#866097","#365D25","#252F99","#00CCFF", "#FC009C", "#674E60")) + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("") + ylab("") + ggtitle("How Does Each Candidate Treat Women?") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+##Do voters think the Trump video should matter? 
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=3}
+anes$trumpvid <- anes$V162127
+anes$trumpvid <- Recode(anes$trumpvid, "1=5; 2=4; 3=3; 4=2; 5=1; else=0")
+
+vid <- anes %>% group_by(reltrad) %>% summarise(mean = mean(trumpvid, na.rm = TRUE))
+vid$label <- c("Trump Video")
+
+ggplot(vid, aes(x=mean, y =label)) + geom_point(color = "black", shape=21, size =4, aes(fill = factor(reltrad))) + 
+  theme(legend.title=element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(limits = c(1,5), breaks = c(1,2,3,4,5), labels = c("Not at all", "A little", "A moderate amount", "A lot", "A great deal")) +  
+  scale_fill_manual(values = c("#866097","#365D25","#252F99","#00CCFF", "#FC009C", "#674E60")) + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("") + ylab("") + ggtitle("Do you think the video should matter to voters?") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+## Do you trust the voting process? 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=3}
+anes$trust_vote <- anes$V162219
+
+anes$trust_vote[anes$trust_vote == -9] <- NA
+anes$trust_vote[anes$trust_vote == -8] <- NA
+anes$trust_vote[anes$trust_vote == -7] <- NA
+anes$trust_vote[anes$trust_vote == -6] <- NA
+
+anes$trust_vote <- 6 - anes$trust_vote
+
+#anes$trust_vote <- Recode(anes$trust_vote, "1= 'Never';
+     #                                       2= 'Some of the time';
+      #                                      3= 'About half of the time';
+     #                                       4= 'Most of the time';
+      #                                      5= 'All of the time'")
+
+
+trust <- anes %>% group_by(reltrad) %>% summarise(mean = mean(trust_vote, na.rm = TRUE))
+trust$label <- c("Trust Voting Process")
+
+ggplot(trust, aes(x=mean, y =label)) + geom_point(color = "black", shape=21, size =4, aes(fill = factor(reltrad))) + 
+  theme(legend.title=element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(limits = c(1,5), breaks = c(1,2,3,4,5), labels = c("Never", "Some of the time", "About half of the time", "Most of the time", "All of the time")) +  
+  scale_fill_manual(values = c("#866097","#365D25","#252F99","#00CCFF", "#FC009C", "#674E60")) + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("") + ylab("") + ggtitle("How often are votes are counted fairly?") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+## Traditional Gender Roles 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=3}
+anes$momwork <- anes$V162230
+
+anes$momwork[anes$momwork == -9] <- NA
+anes$momwork[anes$momwork == -8] <- NA
+anes$momwork[anes$momwork == -7] <- NA
+anes$momwork[anes$momwork == -6] <- NA
+
+anes$momwork <- Recode(anes$momwork, "1=1; 2=-1; 3=0")
+
+mom <- anes %>% group_by(reltrad) %>% summarise(mean = mean(momwork, na.rm = TRUE))
+
+mom$label <- c("Mom Doesn't Work")
+
+ggplot(mom, aes(x=mean, y =label)) + geom_point(color = "black", shape=21, size =4, aes(fill = factor(reltrad))) + 
+  theme(legend.title=element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(limits = c(-1,1), breaks = c(-1,0,1), labels = c("Worse", "Makes No Difference", "Better")) +  
+  scale_fill_manual(values = c("#866097","#365D25","#252F99","#00CCFF", "#FC009C", "#674E60")) + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("") + ylab("") + ggtitle("If the Woman Stays Home is that:") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+## Black Racial Resentment 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE, fig.width=12, fig.height=20}
+anes$black1 <- anes$V162211
+anes$black2 <- anes$V162212
+anes$black3 <- anes$V162213
+anes$black4 <- anes$V162214
+
+
+anes$black1[anes$black1 == -9] <- NA
+anes$black1[anes$black1 == -8] <- NA
+anes$black1[anes$black1 == -7] <- NA
+anes$black1[anes$black1 == -6] <- NA
+
+anes$black2[anes$black2 == -9] <- NA
+anes$black2[anes$black2 == -8] <- NA
+anes$black2[anes$black2 == -7] <- NA
+anes$black2[anes$black2 == -6] <- NA
+
+anes$black3[anes$black3 == -9] <- NA
+anes$black3[anes$black3 == -8] <- NA
+anes$black3[anes$black3 == -7] <- NA
+anes$black3[anes$black3 == -6] <- NA
+
+anes$black4[anes$black4 == -9] <- NA
+anes$black4[anes$black4 == -8] <- NA
+anes$black4[anes$black4 == -7] <- NA
+anes$black4[anes$black4 == -6] <- NA
+
+anes$black1 <- 6- anes$black1
+anes$black4 <- 6- anes$black4
+
+anes$resent <- anes$black1 + anes$black2 + anes$black3 + anes$black4
+
+anes$resent <- anes$resent/20
+
+
+anes$bagain <- Recode(anes$V161263, "1=1; else=0")
+
+anes$prot <- Recode(anes$V161247a, "1=1; else=0")
+
+anes$white <- Recode(anes$V161310a, "1=1; else =0")
+anes$black <- Recode(anes$V161310b, "1=1; else =0")
+anes$asian <- Recode(anes$V161310d, "1=1; else =0")
+
+anes$whtbaprot <- anes$white + anes$bagain + anes$prot
+anes$whtbaprot <- Recode(anes$whtbaprot, "3=1; else=0")
+
+anes$whtnonba <- anes$white + anes$prot
+anes$whtnonba <- Recode(anes$whtnonba, "2=1; else=0")
+anes$batest <- Recode(anes$bagain, "1=10; else=0")
+anes$whtnonba <- anes$whtnonba + anes$batest
+anes$whtnonba <- Recode(anes$whtnonba, "1=1; else=0")
+
+anes$attend <-  anes$V161245
+anes$attend <- Recode(anes$attend, "-9=0; -1=0; 1=6; 2=4; 3=3; 4=2; 5=1")
+
+anes$hiattend <- Recode(anes$V161245a, "1=-1; else=0")
+anes$attend <- anes$hiattend + anes$attend
+
+anes$catholic <- Recode(anes$V161247a, "2=1; else=0")
+anes$jewish <- Recode(anes$V161247a, "3=1; else=0")
+
+anes$blackprot <- anes$black + anes$prot
+anes$blackprot <- Recode(anes$blackprot, "2=1; else=0")
+
+anes$r1 <- Recode(anes$whtbaprot, "1=1; else=0")
+anes$r2 <- Recode(anes$whtnonba, "1=2; else=0")
+anes$r3 <- Recode(anes$blackprot, "1=3; else=0")
+anes$whtcath <- anes$catholic + anes$white
+anes$r4 <- Recode(anes$whtcath, "2=4;else=0")
+anes$whtjew <- anes$jewish + anes$white
+anes$r5 <- Recode(anes$whtjew, "2=5; else=0")
+
+anes$reltrad <- anes$r1 + anes$r2 + anes$r3 + anes$r4 + anes$r5
+
+anes$reltrad <- Recode(anes$reltrad, "1='White Born Again Protestants';
+                       2='White Non Born Again Protestants';
+                       3='Black Protestants';
+                       4='white Catholic'; 
+                       5='White Jewish';
+                       0= 'Other'")
+
+resent <- anes %>% group_by(reltrad) %>% summarise(mean = mean(resent, na.rm = TRUE))
+
+g1 <- ggplot(anes %>% filter(r1 ==1), aes(x=resent)) + 
+  geom_bar(aes(y = (..count..)/sum(..count..)*100), fill = "#FC009C", color = "black") + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("Black Resentment Scale") + ylab("Percent of Respondents") + 
+  ggtitle("White Born Again Protestants") +
+  theme(plot.title = element_text(hjust = 0.5)) + geom_vline(xintercept = .739, linetype =2)
+
+g2 <- ggplot(anes %>% filter(r2 ==2), aes(x=resent)) + 
+  geom_bar(aes(y = (..count..)/sum(..count..)*100), fill = "#674E60", color = "black") + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("Black Resentment Scale") + ylab("Percent of Respondents") + 
+  ggtitle("White Non Born Again Protestants") +
+  theme(plot.title = element_text(hjust = 0.5)) + geom_vline(xintercept = .648, linetype =2)
+
+g3 <- ggplot(anes %>% filter(r4 ==4), aes(x=resent)) + 
+  geom_bar(aes(y = (..count..)/sum(..count..)*100), fill = "#365D25", color = "black") + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("Black Resentment Scale") + ylab("Percent of Respondents") + 
+  ggtitle("White Catholics") +
+  theme(plot.title = element_text(hjust = 0.5)) + geom_vline(xintercept = .678, linetype =2)
+
+g4 <- ggplot(anes %>% filter(white ==1), aes(x=resent)) + 
+  geom_bar(aes(y = (..count..)/sum(..count..)*100), fill = "grey", color = "black") + 
+  theme(text=element_text(size=18, family="KerkisSans")) + xlab("Black Resentment Scale") + ylab("Percent of Respondents") + 
+  ggtitle("Entire White Sample") +
+  theme(plot.title = element_text(hjust = 0.5)) + geom_vline(xintercept = .661, linetype =2)
+
+grid.arrange(g1, g2, g3, g4, ncol =1)
+
+
+
+```
