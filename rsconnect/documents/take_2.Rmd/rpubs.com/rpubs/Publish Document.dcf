@@ -1,0 +1,8 @@
+name: Publish Document
+title:
+account: rpubs
+server: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/271176/2438606d42154ac89f856e747561e715
+bundleId: https://api.rpubs.com/api/v1/document/271176/2438606d42154ac89f856e747561e715
+url: http://rpubs.com/ryanburge/271176
+when: 1493325513.30829

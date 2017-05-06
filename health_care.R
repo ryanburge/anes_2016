@@ -45,16 +45,17 @@ ggsave(file="aca_opinion.png", type = "cairo-png", width = 9, height = 10)
 ## Vaccines
 
 vax <- anes %>% filter(V162161 >0) %>%  group_by(reltrad) %>% count(V162161) %>% mutate(pct = prop.table(n))
-vax$V162161 <- Recode(vax$V162161, "1=1; 2=-1; 3=0")
+vax$V162161 <- Recode(vax$V162161, "1=1; 3=0; 2=-1")
 #hc$label <- c("Support ACA")
 
 
 vax$V162161 <- Recode(vax$V162161, "1 = 'Benefits Outweigh Risks'; 
-                        -1 = 'Risks Outweigh Benefits'; 
-                         0  = 'No Difference'"  )
+                         0  = 'No Difference';
+                        -1 = 'Risks Outweigh Benefits'
+                        "  )
 
 
-hc$hc <- factor(hc$hc, levels=unique(hc$hc))
+#vax$V162161 <- factor(vax$V162161, levels=unique(vax$V162161))
 
 
 ggplot(vax, aes(1, pct*100)) + geom_col(aes(fill = fct_rev(V162161)), colour = "black") +
@@ -64,4 +65,4 @@ ggplot(vax, aes(1, pct*100)) + geom_col(aes(fill = fct_rev(V162161)), colour = "
   theme(axis.ticks = element_blank(), axis.text.y = element_blank()) + theme(legend.position="bottom") +  
   guides(fill = guide_legend(reverse = TRUE)) + labs(fill="")+ facet_grid(reltrad ~ .)  
 
-ggsave(file="aca_opinion.png", type = "cairo-png", width = 9, height = 10)
+ggsave(file="vax.png", type = "cairo-png", width = 9, height = 10)
