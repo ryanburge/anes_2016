@@ -5,10 +5,17 @@ library(haven)
 
 anes <- read_dta("D:/anes_2016/anes_timeseries_2016.dta")
 
+anes <- read_dta("~/anes_2016/anes_timeseries_2016.dta")
+
 anes %>% 
-  mutate(ques = to_factor(V161266a)) %>% 
+  mutate(ques = to_factor(V161243)) %>% 
   ct(ques)
 
+
+## Race ####
+
+anes <- anes %>% 
+  mutate(black = car::recode(V161310x, "2=1; else =0"))
 
 ## Church Attendance ####
 anes <- anes %>% 
@@ -16,7 +23,7 @@ anes <- anes %>%
   mutate(att = case_when(V161245  == 2 ~ 4,
                          V161245  == 3 ~ 3, 
                          V161245  == 4 ~ 2, 
-                         V161245  == 5 ~ 1,
+                         V161245  == 5 | V161244 == 2 ~ 1,
                          V161245a == 1 ~ 5,
                          V161245a == 2 ~ 6)) %>% 
   mutate(att = att/6)
@@ -89,7 +96,7 @@ anes <- anes %>%
 anes <- anes %>% 
   mutate(therm_fundie = car::recode(V162095, "-9:-1= NA; 101:999 = NA")) %>% 
   mutate(therm_fundie = therm_fundie/100) %>% 
-  mutate(therm_pope = car::recode(V162049, "-9:-1= NA; 101:999 = NA")) %>% 
+  mutate(therm_pope = car::recode(V162094, "-9:-1= NA; 101:999 = NA")) %>% 
   mutate(therm_pope = therm_pope/100) %>% 
   mutate(therm_muslim = car::recode(V162106, "-9:-1= NA; 101:999 = NA")) %>% 
   mutate(therm_muslim = therm_muslim/100) %>% 
